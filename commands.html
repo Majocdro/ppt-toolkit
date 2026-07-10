@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>PPT Toolkit Commands</title>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<script>
+/* Ribbon command handlers — same conventions as the task pane:
+   the FIRST shape you selected is the reference. */
+
+async function selected(context, min) {
+  const shapes = context.presentation.getSelectedShapes();
+  shapes.load("items/id,items/left,items/top,items/width,items/height");
+  await context.sync();
+  if (shapes.items.length < min) throw new Error("Not enough shapes selected.");
+  return shapes.items;
+}
+
+function cmd(fn) {
+  return async event => {
+    try { await PowerPoint.run(fn); } catch (e) { /* silent — ribbon has no status UI */ }
+    event.completed();
+  };
+}
+
+const matchSize = (w, h) => cmd(async ctx => {
+  const items = await selected(ctx, 2);
+  for (let i = 1; i < items.length; i++) {
+    if (w) items[i].width = items[0].width;
+    if (h) items[i].height = items[0].height;
+  }
+  await ctx.sync();
+});
+
+const matchPos = (x, y) => cmd(async ctx => {
+  const items = await selected(ctx, 2);
+  for (let i = 1; i < items.length; i++) {
+    if (x) items[i].left = items[0].left;
+    if (y) items[i].top = items[0].top;
+  }
+  await ctx.sync();
+});
+
+const swap = withSize => cmd(async ctx => {
+  const items = await selected(ctx, 2);
+  if (items.length !== 2) throw new Error("Select exactly 2.");
+  const [a, b] = items;
+  const A = { l: a.left, t: a.top, w: a.width, h: a.height };
+  a.left = b.left; a.top = b.top;
+  b.left = A.l;   b.top = A.t;
+  if (withSize) { a.width = b.width; a.height = b.height; b.width = A.w; b.height = A.h; }
+  await ctx.sync();
+});
+
+const copyFormatCmd = cmd(async ctx => {
+  const shapes = ctx.presentation.getSelectedShapes();
+  shapes.load("items/id,items/fill/type,items/fill/foregroundColor,items/fill/transparency," +
+              "items/lineFormat/color,items/lineFormat/weight,items/lineFormat/dashStyle,items/lineFormat/visible");
+  await ctx.sync();
+  const items = shapes.items;
+  if (items.length < 2) throw new Error("Select 2+.");
+  const src = items[0];
+  for (let i = 1; i < items.length; i++) {
+    const t = items[i];
+    try {
+      if (src.fill.type === "Solid" && src.fill.foregroundColor) {
+        t.fill.setSolidColor(src.fill.foregroundColor);
+        t.fill.transparency = src.fill.transparency;
+      }
+      if (src.lineFormat.visible !== null) t.lineFormat.visible = src.lineFormat.visible;
+      if (src.lineFormat.color)  t.lineFormat.color  = src.lineFormat.color;
+      if (src.lineFormat.weight) t.lineFormat.weight = src.lineFormat.weight;
+      if (src.lineFormat.dashStyle) t.lineFormat.dashStyle = src.lineFormat.dashStyle;
+    } catch (e) { /* skip */ }
+  }
+  await ctx.sync();
+  try {
+    const f = items[0].textFrame.textRange.font;
+    f.load("name,size,color,bold,italic,underline");
+    await ctx.sync();
+    for (let i = 1; i < items.length; i++) {
+      const tf = items[i].textFrame.textRange.font;
+      if (f.name)  tf.name  = f.name;
+      if (f.size)  tf.size  = f.size;
+      if (f.color) tf.color = f.color;
+      tf.bold = f.bold; tf.italic = f.italic;
+      if (f.underline) tf.underline = f.underline;
+    }
+    await ctx.sync();
+  } catch (e) { /* no text — fill/border already applied */ }
+});
+
+const copyTextCmd = cmd(async ctx => {
+  const shapes = ctx.presentation.getSelectedShapes();
+  shapes.load("items/id");
+  await ctx.sync();
+  const items = shapes.items;
+  if (items.length < 2) throw new Error("Select 2+.");
+  const srcRange = items[0].textFrame.textRange;
+  srcRange.load("text");
+  await ctx.sync();
+  for (let i = 1; i < items.length; i++) items[i].textFrame.textRange.text = srcRange.text;
+  await ctx.sync();
+});
+
+Office.onReady(() => {
+  Office.actions.associate("matchWidth",  matchSize(true, false));
+  Office.actions.associate("matchHeight", matchSize(false, true));
+  Office.actions.associate("matchBoth",   matchSize(true, true));
+  Office.actions.associate("matchX",      matchPos(true, false));
+  Office.actions.associate("matchY",      matchPos(false, true));
+  Office.actions.associate("swapPos",     swap(false));
+  Office.actions.associate("swapAll",     swap(true));
+  Office.actions.associate("copyFormat",  copyFormatCmd);
+  Office.actions.associate("copyText",    copyTextCmd);
+});
+</script>
+</head>
+<body></body>
+</html>

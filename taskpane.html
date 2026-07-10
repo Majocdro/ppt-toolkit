@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PPT Toolkit</title>
+<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+<style>
+  :root {
+    --blue: #2658d6;
+    --blue-dark: #1c44a8;
+    --bg: #f7f8fa;
+    --border: #d1cfcd;
+    --text: #323130;      /* Office neutral */
+    --icon: #484644;      /* Office ribbon icon gray */
+    --hover: #f3f2f1;     /* Office hover */
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", -apple-system, Helvetica, Arial, sans-serif;
+    margin: 0; padding: 10px 12px 40px;
+    background: var(--bg); color: var(--text); font-size: 13px;
+  }
+  h1 { font-size: 15px; margin: 4px 0 10px; }
+  details {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 8px; margin-bottom: 8px; padding: 0;
+  }
+  summary {
+    cursor: pointer; font-weight: 600; padding: 9px 12px;
+    user-select: none; outline: none;
+  }
+  .body { padding: 4px 12px 12px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; align-items: center; }
+  button {
+    background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 4px;
+    padding: 7px 10px; font-size: 12.5px; cursor: pointer; flex: 1 1 auto;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  button:hover { background: var(--hover); border-color: #b8b6b4; }
+  button:active { background: #edebe9; }
+  button.secondary { background: transparent; }
+  button.secondary:hover { background: var(--hover); }
+  label { font-size: 12px; }
+  input[type=number] {
+    width: 62px; padding: 5px 6px; border: 1px solid var(--border);
+    border-radius: 5px; font-size: 12.5px;
+  }
+  select { padding: 5px 6px; border: 1px solid var(--border); border-radius: 5px; font-size: 12.5px; }
+  .hint { color: #667085; font-size: 11.5px; margin: 2px 0 8px; }
+  #status {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 7px 12px; font-size: 12px; background: #eef1f6;
+    border-top: 1px solid var(--border); min-height: 30px;
+  }
+  #status.err { background: #fdecea; color: #b3261e; }
+  #status.ok { background: #e6f4ea; color: #1e7e34; }
+  .chk { display: flex; align-items: center; gap: 5px; font-size: 12px; margin-bottom: 6px; }
+  .ic {
+    width: 14px; height: 14px; vertical-align: -2px; margin-right: 6px;
+    fill: none; stroke: var(--icon); stroke-width: 1.4;
+    stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0;
+  }
+  summary .ic { width: 15px; height: 15px; margin-right: 7px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-size" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="8" height="8" rx="1"/><rect x="6.5" y="6.5" width="8" height="8" rx="1"/></symbol>
+    <symbol id="i-width" viewBox="0 0 16 16"><path d="M2 8h12M5 5L2 8l3 3M11 5l3 3-3 3"/></symbol>
+    <symbol id="i-height" viewBox="0 0 16 16"><path d="M8 2v12M5 5l3-3 3 3M5 11l3 3 3-3"/></symbol>
+    <symbol id="i-both" viewBox="0 0 16 16"><path d="M3 13L13 3M3 8v5h5M13 8V3H8"/></symbol>
+    <symbol id="i-pos" viewBox="0 0 16 16"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v3M8 12v3M1 8h3M12 8h3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="M8 2v12M2 8h4M4 6l2 2-2 2M14 8h-4M12 6l-2 2 2 2"/></symbol>
+    <symbol id="i-y" viewBox="0 0 16 16"><path d="M2 8h12M8 2v4M6 4l2 2 2-2M8 14v-4M6 12l2-2 2 2"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 16 16"><path d="M4 5h8M9 2l3 3-3 3M12 11H4M7 8l-3 3 3 3"/></symbol>
+    <symbol id="i-swapsize" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="6" height="6"/><rect x="8.5" y="8.5" width="6" height="6"/><path d="M11 5l-6 6M5 8v3h3M11 8V5H8"/></symbol>
+    <symbol id="i-gap" viewBox="0 0 16 16"><rect x="1.5" y="3" width="3.5" height="10"/><rect x="11" y="3" width="3.5" height="10"/><path d="M6.5 8h3M6.5 6.5v3M9.5 6.5v3"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 16 16"><rect x="1.5" y="1.5" width="5.5" height="5.5"/><rect x="9" y="1.5" width="5.5" height="5.5"/><rect x="1.5" y="9" width="5.5" height="5.5"/><rect x="9" y="9" width="5.5" height="5.5"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="9" height="9" rx="1"/><path d="M3.5 10.5h-2v-9h9v2"/></symbol>
+    <symbol id="i-roller" viewBox="0 0 16 16"><rect x="1.5" y="2" width="9" height="4" rx="1"/><path d="M10.5 4h3v4H8v2.5"/><rect x="7" y="10.5" width="2" height="4"/></symbol>
+    <symbol id="i-text" viewBox="0 0 16 16"><path d="M3 4V2.5h10V4M8 2.5v11M6 13.5h4"/></symbol>
+    <symbol id="i-split" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M9 3v10M9 8h5.5"/></symbol>
+    <symbol id="i-splitEq" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M8 3v10"/></symbol>
+    <symbol id="i-golden" viewBox="0 0 16 16"><rect x="1.5" y="3" width="13" height="10" rx="1"/><path d="M10.5 3v10"/></symbol>
+    <symbol id="i-lib" viewBox="0 0 16 16"><path d="M4.5 4.5V3h9v6.5"/><rect x="2.5" y="5.5" width="9" height="7.5" rx="1"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 16 16"><path d="M13.5 8A5.5 5.5 0 1111.9 4.1M13.5 1.5v3h-3"/></symbol>
+  </defs>
+</svg>
+
+<h1>PPT Toolkit</h1>
+<p class="hint">The <b>first shape you selected</b> is always the reference (its size/format/text is applied to the others).</p>
+
+<details open>
+  <summary><svg class="ic"><use href="#i-size"/></svg>Match size</summary>
+  <div class="body">
+    <div class="row">
+      <button onclick="matchSize(true,false)"><svg class="ic"><use href="#i-width"/></svg>Width</button>
+      <button onclick="matchSize(false,true)"><svg class="ic"><use href="#i-height"/></svg>Height</button>
+      <button onclick="matchSize(true,true)"><svg class="ic"><use href="#i-both"/></svg>Both</button>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary><svg class="ic"><use href="#i-pos"/></svg>Match position</summary>
+  <div class="body">
+    <div class="row">
+      <button onclick="matchPos(true,false)"><svg class="ic"><use href="#i-x"/></svg>Horizontal (X)</button>
+      <button onclick="matchPos(false,true)"><svg class="ic"><use href="#i-y"/></svg>Vertical (Y)</button>
+    </div>
+  </div>
+</details>
+
+<details open>
+  <summary><svg class="ic"><use href="#i-swap"/></svg>Swap (select exactly 2)</summary>
+  <div class="body">
+    <div class="row">
+      <button onclick="swapShapes(false)"><svg class="ic"><use href="#i-swap"/></svg>Positions</button>
+      <button onclick="swapShapes(true)"><svg class="ic"><use href="#i-swapsize"/></svg>Position + size</button>
+    </div>
+  </div>
+</details>
+
+<details>
+  <summary><svg class="ic"><use href="#i-gap"/></svg>Exact gap</summary>
+  <div class="body">
+    <div class="row">
+      <label>Gap: <input type="number" id="gap" value="0.5" step="0.1"> cm</label>
+    </div>
+    <div class="row">
+      <button onclick="setGap('h')"><svg class="ic"><use href="#i-width"/></svg>Horizontally</button>
+      <button onclick="setGap('v')"><svg class="ic"><use href="#i-height"/></svg>Vertically</button>
+    </div>
+    <p class="hint">First shape (left-/top-most) stays put; the rest are re-spaced.</p>
+  </div>
+</details>
+
+<details>
+  <summary><svg class="ic"><use href="#i-grid"/></svg>Grid layout</summary>
+  <div class="body">
+    <div class="row">
+      <label>Columns: <input type="number" id="gridCols" value="3" min="1" step="1"></label>
+      <label>Gap: <input type="number" id="gridGap" value="0.5" step="0.1"> cm</label>
+    </div>
+    <div class="chk"><input type="checkbox" id="gridUniform" checked><label for="gridUniform">Make all shapes same size as reference</label></div>
+    <div class="row"><button onclick="makeGrid()"><svg class="ic"><use href="#i-grid"/></svg>Arrange in grid</button></div>
+    <p class="hint">Grid starts at the top-left-most shape's position.</p>
+  </div>
+</details>
+
+<details>
+  <summary><svg class="ic"><use href="#i-copy"/></svg>Copy from reference</summary>
+  <div class="body">
+    <div class="row">
+      <button onclick="copyFormat()"><svg class="ic"><use href="#i-roller"/></svg>Formatting</button>
+      <button onclick="copyText()"><svg class="ic"><use href="#i-text"/></svg>Text only</button>
+    </div>
+    <p class="hint">Formatting = fill, border, font (name, size, color, bold, italic). Text only = replaces text, keeps each shape's own look.</p>
+  </div>
+</details>
+
+<details>
+  <summary><svg class="ic"><use href="#i-split"/></svg>Split slide area</summary>
+  <div class="body">
+    <div class="row">
+      <label>Slide: <input type="number" id="slideW" value="33.87" step="0.01"> ×
+      <input type="number" id="slideH" value="19.05" step="0.01"> cm</label>
+    </div>
+    <div class="row">
+      <label>Margin: <input type="number" id="splitMargin" value="1" step="0.1"> cm</label>
+      <label>Gap: <input type="number" id="splitGap" value="0.5" step="0.1"> cm</label>
+    </div>
+    <div class="row">
+      <select id="splitOrient">
+        <option value="h">Side by side (columns)</option>
+        <option value="v">Stacked (rows)</option>
+      </select>
+    </div>
+    <div class="chk"><input type="checkbox" id="splitFill" checked><label for="splitFill">Also stretch shapes to fill the other axis</label></div>
+    <div class="row">
+      <button onclick="splitSlide('equal')"><svg class="ic"><use href="#i-splitEq"/></svg>Equal split</button>
+      <button onclick="splitSlide('golden')"><svg class="ic"><use href="#i-golden"/></svg>Golden ratio (2)</button>
+    </div>
+    <p class="hint">Golden ratio: reference shape gets the large section (61.8%).</p>
+  </div>
+</details>
+
+<details open>
+  <summary><svg class="ic"><use href="#i-lib"/></svg>Slide library</summary>
+  <div class="body">
+    <p class="hint">Your premade slides, stored as .pptx files in the <b>addin/library</b> folder. Click to insert after the current slide.</p>
+    <div class="chk"><input type="checkbox" id="libTheme"><label for="libTheme">Adapt to this deck's theme (instead of keeping original look)</label></div>
+    <div id="libList"><p class="hint">Loading library…</p></div>
+    <div class="row"><button class="secondary" onclick="refreshLibrary()"><svg class="ic"><use href="#i-refresh"/></svg>Refresh list</button></div>
+  </div>
+</details>
+
+<div id="status">Loading…</div>
+
+<script>
+const CM = 28.3465; // points per cm
+const $ = id => document.getElementById(id);
+const cm = id => parseFloat($(id).value || 0) * CM;
+
+function status(msg, cls) {
+  const el = $("status");
+  el.textContent = msg;
+  el.className = cls || "";
+}
+
+Office.onReady(info => {
+  if (info.host !== Office.HostType.PowerPoint) {
+    status("Open this add-in in PowerPoint.", "err"); return;
+  }
+  if (!Office.context.requirements.isSetSupported("PowerPointApi", "1.5")) {
+    status("Your PowerPoint version is too old for shape selection APIs. Please update Office.", "err");
+    return;
+  }
+  status("Ready. Select shapes, then click a tool.", "ok");
+  refreshLibrary();
+});
+
+/* ---------- Slide library ---------- */
+async function refreshLibrary() {
+  const list = $("libList");
+  let files = [];
+  // Primary: parse the local server's directory listing
+  try {
+    const res = await fetch("library/", { cache: "no-store" });
+    if (res.ok) {
+      const doc = new DOMParser().parseFromString(await res.text(), "text/html");
+      files = [...doc.querySelectorAll("a")]
+        .map(a => a.getAttribute("href") || "")
+        .filter(h => h.toLowerCase().endsWith(".pptx"))
+        .map(h => decodeURIComponent(h.split("/").pop()));
+    }
+  } catch (e) { /* fall through */ }
+  // Fallback: optional library/index.json ["file1.pptx", ...]
+  if (!files.length) {
+    try {
+      const res = await fetch("library/index.json", { cache: "no-store" });
+      if (res.ok) files = await res.json();
+    } catch (e) { /* ignore */ }
+  }
+  files = [...new Set(files)].sort((a, b) => a.localeCompare(b));
+  if (!files.length) {
+    list.innerHTML = '<p class="hint">No slides yet. Drop .pptx files into the <b>addin/library</b> folder, then hit Refresh.</p>';
+    return;
+  }
+  list.innerHTML = "";
+  files.forEach(f => {
+    const row = document.createElement("div");
+    row.className = "row";
+    const btn = document.createElement("button");
+    btn.innerHTML = '<svg class="ic"><use href="#i-plus"/></svg>';
+    btn.appendChild(document.createTextNode(f.replace(/\.pptx$/i, "")));
+    btn.style.textAlign = "left";
+    btn.onclick = () => insertFromLibrary(f);
+    row.appendChild(btn);
+    list.appendChild(row);
+  });
+}
+
+function bufToBase64(buf) {
+  const bytes = new Uint8Array(buf);
+  let bin = "";
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(bin);
+}
+
+async function insertFromLibrary(name) {
+  status("Inserting “" + name + "”…");
+  try {
+    const res = await fetch("library/" + encodeURIComponent(name), { cache: "no-store" });
+    if (!res.ok) throw new Error("Could not load " + name + " (is the server running?).");
+    const b64 = bufToBase64(await res.arrayBuffer());
+    await PowerPoint.run(async ctx => {
+      // Insert after the currently selected slide; fall back to end of deck
+      let targetId = null;
+      try {
+        const sel = ctx.presentation.getSelectedSlides();
+        sel.load("items/id");
+        await ctx.sync();
+        if (sel.items.length) targetId = sel.items[sel.items.length - 1].id;
+      } catch (e) { /* no selection info */ }
+      if (!targetId) {
+        const all = ctx.presentation.slides;
+        all.load("items/id");
+        await ctx.sync();
+        if (all.items.length) targetId = all.items[all.items.length - 1].id;
+      }
+      const opts = { formatting: $("libTheme").checked ? "UseDestinationTheme" : "KeepSourceFormatting" };
+      if (targetId) opts.targetSlideId = targetId;
+      ctx.presentation.insertSlidesFromBase64(b64, opts);
+      await ctx.sync();
+    });
+    status("Inserted “" + name.replace(/\.pptx$/i, "") + "”.", "ok");
+  } catch (e) {
+    status(e.message || String(e), "err");
+  }
+}
+
+async function getSelected(context, min) {
+  const shapes = context.presentation.getSelectedShapes();
+  shapes.load("items/id,items/left,items/top,items/width,items/height");
+  await context.sync();
+  if (shapes.items.length < min) {
+    throw new Error(`Select at least ${min} shapes (currently ${shapes.items.length}).`);
+  }
+  return shapes.items;
+}
+
+function run(fn) {
+  PowerPoint.run(fn)
+    .catch(e => status(e.message || String(e), "err"));
+}
+
+/* ---------- Match size ---------- */
+function matchSize(w, h) {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    const ref = items[0];
+    for (let i = 1; i < items.length; i++) {
+      if (w) items[i].width = ref.width;
+      if (h) items[i].height = ref.height;
+    }
+    await ctx.sync();
+    status(`Matched ${w && h ? "size" : w ? "width" : "height"} of ${items.length - 1} shape(s).`, "ok");
+  });
+}
+
+/* ---------- Match position ---------- */
+function matchPos(x, y) {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    const ref = items[0];
+    for (let i = 1; i < items.length; i++) {
+      if (x) items[i].left = ref.left;
+      if (y) items[i].top = ref.top;
+    }
+    await ctx.sync();
+    status(`Matched ${x ? "horizontal" : "vertical"} position.`, "ok");
+  });
+}
+
+/* ---------- Swap ---------- */
+function swapShapes(withSize) {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    if (items.length !== 2) throw new Error("Select exactly 2 shapes to swap.");
+    const [a, b] = items;
+    const A = { l: a.left, t: a.top, w: a.width, h: a.height };
+    a.left = b.left; a.top = b.top;
+    b.left = A.l;   b.top = A.t;
+    if (withSize) {
+      a.width = b.width; a.height = b.height;
+      b.width = A.w;    b.height = A.h;
+    }
+    await ctx.sync();
+    status(withSize ? "Swapped position + size." : "Swapped positions.", "ok");
+  });
+}
+
+/* ---------- Exact gap ---------- */
+function setGap(dir) {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    const gap = cm("gap");
+    const sorted = [...items].sort((p, q) => dir === "h" ? p.left - q.left : p.top - q.top);
+    let cursor = dir === "h"
+      ? sorted[0].left + sorted[0].width
+      : sorted[0].top + sorted[0].height;
+    for (let i = 1; i < sorted.length; i++) {
+      if (dir === "h") { sorted[i].left = cursor + gap; cursor = sorted[i].left + sorted[i].width; }
+      else             { sorted[i].top  = cursor + gap; cursor = sorted[i].top  + sorted[i].height; }
+    }
+    await ctx.sync();
+    status(`Spaced ${items.length} shapes with ${(gap / CM).toFixed(2)} cm gaps.`, "ok");
+  });
+}
+
+/* ---------- Grid ---------- */
+function makeGrid() {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    const cols = Math.max(1, parseInt($("gridCols").value) || 1);
+    const gap = cm("gridGap");
+    const uniform = $("gridUniform").checked;
+    const ref = items[0];
+    const sorted = [...items].sort((p, q) => (p.top - q.top) || (p.left - q.left));
+    const originL = Math.min(...items.map(s => s.left));
+    const originT = Math.min(...items.map(s => s.top));
+    const cw = ref.width, ch = ref.height;
+    sorted.forEach((s, i) => {
+      const r = Math.floor(i / cols), c = i % cols;
+      if (uniform) { s.width = cw; s.height = ch; }
+      s.left = originL + c * ((uniform ? cw : s.width) + gap);
+      s.top  = originT + r * ((uniform ? ch : s.height) + gap);
+    });
+    await ctx.sync();
+    status(`Arranged ${items.length} shapes into a ${Math.ceil(items.length / cols)}×${cols} grid.`, "ok");
+  });
+}
+
+/* ---------- Copy formatting ---------- */
+function copyFormat() {
+  run(async ctx => {
+    const shapes = ctx.presentation.getSelectedShapes();
+    shapes.load("items/id,items/fill/type,items/fill/foregroundColor,items/fill/transparency," +
+                "items/lineFormat/color,items/lineFormat/weight,items/lineFormat/dashStyle,items/lineFormat/visible");
+    await ctx.sync();
+    const items = shapes.items;
+    if (items.length < 2) throw new Error("Select the reference shape first, then the targets (2+ shapes).");
+    const src = items[0];
+    for (let i = 1; i < items.length; i++) {
+      const t = items[i];
+      try {
+        if (src.fill.type === "Solid" && src.fill.foregroundColor) {
+          t.fill.setSolidColor(src.fill.foregroundColor);
+          t.fill.transparency = src.fill.transparency;
+        }
+        if (src.lineFormat.visible !== null) t.lineFormat.visible = src.lineFormat.visible;
+        if (src.lineFormat.color)  t.lineFormat.color  = src.lineFormat.color;
+        if (src.lineFormat.weight) t.lineFormat.weight = src.lineFormat.weight;
+        if (src.lineFormat.dashStyle) t.lineFormat.dashStyle = src.lineFormat.dashStyle;
+      } catch (e) { /* shape without fill/line — skip */ }
+    }
+    await ctx.sync();
+    status("Copied fill + border. Copying font…");
+
+    // Font in a second pass so text-less shapes can't break fill/line copy
+    try {
+      await PowerPoint.run(async ctx2 => {
+        const sh = ctx2.presentation.getSelectedShapes();
+        sh.load("items/id");
+        await ctx2.sync();
+        const f = sh.items[0].textFrame.textRange.font;
+        f.load("name,size,color,bold,italic,underline");
+        await ctx2.sync();
+        for (let i = 1; i < sh.items.length; i++) {
+          const tf = sh.items[i].textFrame.textRange.font;
+          if (f.name)  tf.name  = f.name;
+          if (f.size)  tf.size  = f.size;
+          if (f.color) tf.color = f.color;
+          tf.bold = f.bold; tf.italic = f.italic;
+          if (f.underline) tf.underline = f.underline;
+        }
+        await ctx2.sync();
+      });
+      status("Copied formatting (fill, border, font).", "ok");
+    } catch (e) {
+      status("Copied fill + border (font skipped — a selected shape has no text).", "ok");
+    }
+  });
+}
+
+/* ---------- Copy text ---------- */
+function copyText() {
+  run(async ctx => {
+    const shapes = ctx.presentation.getSelectedShapes();
+    shapes.load("items/id");
+    await ctx.sync();
+    const items = shapes.items;
+    if (items.length < 2) throw new Error("Select the reference shape first, then the targets (2+ shapes).");
+    const srcRange = items[0].textFrame.textRange;
+    srcRange.load("text");
+    await ctx.sync();
+    for (let i = 1; i < items.length; i++) {
+      items[i].textFrame.textRange.text = srcRange.text;
+    }
+    await ctx.sync();
+    status(`Copied text to ${items.length - 1} shape(s). Their own formatting was kept.`, "ok");
+  });
+}
+
+/* ---------- Split slide ---------- */
+function splitSlide(mode) {
+  run(async ctx => {
+    const items = await getSelected(ctx, 2);
+    if (mode === "golden" && items.length !== 2) throw new Error("Golden ratio needs exactly 2 shapes.");
+    const slideW = cm("slideW"), slideH = cm("slideH");
+    const margin = cm("splitMargin"), gap = cm("splitGap");
+    const orient = $("splitOrient").value;
+    const fill = $("splitFill").checked;
+    const n = items.length;
+    const total = (orient === "h" ? slideW : slideH) - 2 * margin - (n - 1) * gap;
+    if (total <= 0) throw new Error("Margin/gap too large for the slide size.");
+
+    let sizes;
+    if (mode === "golden") sizes = [total * 0.618, total * 0.382];
+    else sizes = Array(n).fill(total / n);
+
+    // Reference (first-selected) gets the first (largest) section;
+    // remaining shapes ordered by current position.
+    const rest = items.slice(1).sort((p, q) => orient === "h" ? p.left - q.left : p.top - q.top);
+    const ordered = [items[0], ...rest];
+
+    let cursor = margin;
+    ordered.forEach((s, i) => {
+      if (orient === "h") {
+        s.left = cursor; s.width = sizes[i];
+        if (fill) { s.top = margin; s.height = slideH - 2 * margin; }
+      } else {
+        s.top = cursor; s.height = sizes[i];
+        if (fill) { s.left = margin; s.width = slideW - 2 * margin; }
+      }
+      cursor += sizes[i] + gap;
+    });
+    await ctx.sync();
+    status(`${mode === "golden" ? "Golden-ratio" : "Equal"} split applied to ${n} shapes.`, "ok");
+  });
+}
+</script>
+</body>
+</html>
